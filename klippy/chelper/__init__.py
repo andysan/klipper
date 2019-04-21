@@ -11,11 +11,6 @@ import cffi
 # c_helper.so compiling
 ######################################################################
 
-GCC_CMD = "gcc"
-COMPILE_ARGS = ("-Wall -g -O2 -shared -fPIC"
-                " -flto -fwhole-program -fno-use-linker-plugin"
-                " -o %s %s")
-SSE_FLAGS = "-mfpmath=sse -msse2"
 SOURCE_FILES = [
     'pyhelper.c', 'serialqueue.c', 'stepcompress.c', 'itersolve.c', 'trapq.c',
     'kin_cartesian.c', 'kin_corexy.c', 'kin_corexz.c', 'kin_delta.c',
@@ -171,12 +166,23 @@ defs_std = """
     void free(void*);
 """
 
-defs_all = [
-    defs_pyhelper, defs_serialqueue, defs_std, defs_stepcompress,
-    defs_itersolve, defs_trapq, defs_kin_cartesian, defs_kin_corexy,
+defs_kin = [
+    defs_trapq, defs_kin_cartesian, defs_kin_corexy,
     defs_kin_corexz, defs_kin_delta, defs_kin_polar, defs_kin_rotary_delta,
     defs_kin_winch, defs_kin_extruder, defs_kin_shaper,
 ]
+
+defs_all = [
+    defs_pyhelper, defs_serialqueue, defs_std,
+    defs_stepcompress, defs_itersolve,
+] + defs_kin
+
+ffi_source = """
+#include "stepcompress.h"
+#include "itersolve.h"
+#include "serialqueue.h"
+#include "pyhelper.h"
+""" + '\n'.join(defs_kin)
 
 # Update filenames to an absolute path
 def get_abs_files(srcdir, filelist):
@@ -218,16 +224,15 @@ def get_ffi():
         ofiles = get_abs_files(srcdir, OTHER_FILES)
         destlib = get_abs_files(srcdir, [DEST_LIB])[0]
         if check_build_code(srcfiles+ofiles+[__file__], destlib):
-            if check_gcc_option(SSE_FLAGS):
-                cmd = "%s %s %s" % (GCC_CMD, SSE_FLAGS, COMPILE_ARGS)
-            else:
-                cmd = "%s %s" % (GCC_CMD, COMPILE_ARGS)
             logging.info("Building C code module %s", DEST_LIB)
-            os.system(cmd % (destlib, ' '.join(srcfiles)))
-        FFI_main = cffi.FFI()
-        for d in defs_all:
-            FFI_main.cdef(d)
-        FFI_lib = FFI_main.dlopen(destlib)
+            ffi = cffi.FFI()
+            for d in defs_all:
+                ffi.cdef(d)
+            ffi.set_source("c_helper", ffi_source, sources=SOURCE_FILES)
+            ffi.compile(tmpdir=srcdir)
+        import c_helper
+        FFI_main = c_helper.ffi
+        FFI_lib = c_helper.lib
         # Setup error logging
         def logging_callback(msg):
             logging.error(FFI_main.string(msg))

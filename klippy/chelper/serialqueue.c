@@ -831,24 +831,31 @@ serialqueue_alloc(int serial_fd, int write_only)
 {
     errorf("a1");
     struct serialqueue *sq = malloc(sizeof(*sq));
+    errorf("a2");
     memset(sq, 0, sizeof(*sq));
+    errorf("a3");
 
     // Reactor setup
     sq->serial_fd = serial_fd;
+    errorf("a4");
     int ret = pipe(sq->pipe_fds);
+    errorf("a5");
     if (ret)
         goto fail;
+    errorf("a6");
     pollreactor_setup(&sq->pr, SQPF_NUM, SQPT_NUM, sq);
     if (!write_only)
         pollreactor_add_fd(&sq->pr, SQPF_SERIAL, serial_fd, input_event);
     pollreactor_add_fd(&sq->pr, SQPF_PIPE, sq->pipe_fds[0], kick_event);
     pollreactor_add_timer(&sq->pr, SQPT_RETRANSMIT, retransmit_event);
     pollreactor_add_timer(&sq->pr, SQPT_COMMAND, command_event);
+    errorf("a7");
     set_non_blocking(serial_fd);
     set_non_blocking(sq->pipe_fds[0]);
     set_non_blocking(sq->pipe_fds[1]);
 
     // Retransmit setup
+    errorf("a8");
     sq->send_seq = 1;
     if (write_only) {
         sq->receive_seq = -1;
@@ -859,6 +866,7 @@ serialqueue_alloc(int serial_fd, int write_only)
     }
 
     // Queues
+    errorf("a9");
     sq->need_kick_clock = MAX_CLOCK;
     list_init(&sq->pending_queues);
     list_init(&sq->sent_queue);
@@ -866,25 +874,31 @@ serialqueue_alloc(int serial_fd, int write_only)
     list_init(&sq->notify_queue);
 
     // Debugging
+    errorf("a10");
     list_init(&sq->old_sent);
     list_init(&sq->old_receive);
     debug_queue_alloc(&sq->old_sent, DEBUG_QUEUE_SENT);
     debug_queue_alloc(&sq->old_receive, DEBUG_QUEUE_RECEIVE);
 
     // Thread setup
+    errorf("a11");
     ret = pthread_mutex_init(&sq->lock, NULL);
     if (ret)
         goto fail;
+    errorf("a12");
     ret = pthread_cond_init(&sq->cond, NULL);
     if (ret)
         goto fail;
+    errorf("a13");
     ret = pthread_create(&sq->tid, NULL, background_thread, sq);
     if (ret)
         goto fail;
 
+    errorf("a14");
     return sq;
 
 fail:
+    errorf("a fail");
     report_errno("init", ret);
     return NULL;
 }

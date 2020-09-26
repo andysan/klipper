@@ -46,6 +46,7 @@ void __visible
 set_python_logging_callback(void (*func)(const char *))
 {
     python_logging_callback = func;
+    errorf("got py callback");
 }
 
 // Log an error message

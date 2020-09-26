@@ -829,6 +829,7 @@ background_thread(void *data)
 struct serialqueue * __visible
 serialqueue_alloc(int serial_fd, int write_only)
 {
+    errorf("a1");
     struct serialqueue *sq = malloc(sizeof(*sq));
     memset(sq, 0, sizeof(*sq));
 
@@ -903,6 +904,7 @@ serialqueue_exit(struct serialqueue *sq)
 void __visible
 serialqueue_free(struct serialqueue *sq)
 {
+    errorf("af1");
     if (!sq)
         return;
     if (!pollreactor_is_exit(&sq->pr))

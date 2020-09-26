@@ -829,9 +829,9 @@ background_thread(void *data)
 struct serialqueue * __visible
 serialqueue_alloc(int serial_fd, int write_only)
 {
-    errorf("a1");
+    errorf("a1 %d %d", serial_fd, write_only);
     struct serialqueue *sq = malloc(sizeof(*sq));
-    errorf("a2");
+    errorf("a2 %p", sq);
     memset(sq, 0, sizeof(*sq));
     errorf("a3");
 
@@ -868,17 +868,26 @@ serialqueue_alloc(int serial_fd, int write_only)
     // Queues
     errorf("a9");
     sq->need_kick_clock = MAX_CLOCK;
+    errorf("a9.1");
     list_init(&sq->pending_queues);
+    errorf("a9.2");
     list_init(&sq->sent_queue);
+    errorf("a9.3");
     list_init(&sq->receive_queue);
+    errorf("a9.4");
     list_init(&sq->notify_queue);
+    errorf("a9.5");
 
     // Debugging
     errorf("a10");
     list_init(&sq->old_sent);
+    errorf("a10.1");
     list_init(&sq->old_receive);
+    errorf("a10.2");
     debug_queue_alloc(&sq->old_sent, DEBUG_QUEUE_SENT);
+    errorf("a10.3");
     debug_queue_alloc(&sq->old_receive, DEBUG_QUEUE_RECEIVE);
+    errorf("a10.4");
 
     // Thread setup
     errorf("a11");

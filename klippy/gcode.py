@@ -172,13 +172,24 @@ class GCodeDispatch:
         self._respond_state("Ready")
     # Parse input into commands
     args_r = re.compile('([A-Z_]+|[A-Z*/])')
+    def _strip_comments(self, command):
+        command = command.split(";", 1)[0]
+        # Find RS-274-D style comments enclosed in parentheses
+        start_idx = command.find("(")
+        stop_idx = command.find(")")
+        if (start_idx >= 0 and stop_idx < 0) or \
+           (start_idx < 0 and stop_idx >= 0):
+            # Unmatched parenteses, this is an illegal comment.
+            raise self.error("Malformed command '%s'" % command)
+        if start_idx < 0:
+            return command
+        return self._strip_comments(
+            command[0:start_idx] + command[stop_idx + 1:])
     def _process_commands(self, commands, need_ack=True):
         for line in commands:
             # Ignore comments and leading/trailing spaces
             line = origline = line.strip()
-            cpos = line.find(';')
-            if cpos >= 0:
-                line = line[:cpos]
+            line = self._strip_comments(line)
             # Break line into parts and determine command
             parts = self.args_r.split(line.upper())
             numparts = len(parts)
